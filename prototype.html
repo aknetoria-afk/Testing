@@ -150,6 +150,23 @@ body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],
 .wiz-choice[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, var(--surface))}
 .wiz-type-grid .wiz-choice{flex-direction:row;align-items:center;gap:12px}
 .wiz-choice svg{flex-shrink:0;color:var(--brand)}
+
+/* ===== Variant 4: cards (ЛСР reference) ===== */
+.quicklinks{gap:18px;margin-bottom:4px}
+.quicklink{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;font-weight:600;color:var(--muted);text-decoration:none}
+.quicklink:hover,.quicklink:focus-visible{color:var(--fg)}
+.quicklink svg{color:var(--accent)}
+.lsr-grid{grid-template-columns:repeat(3,1fr)}
+@media (max-width:860px){.lsr-grid{grid-template-columns:1fr}}
+.lsr-card{padding:28px 24px 24px;scroll-margin-top:84px}
+.lsr-card h3{font-size:1.4rem;margin-bottom:2px}
+.lsr-card>.muted{margin-bottom:20px}
+.stat-chip{appearance:none;border:1px solid var(--border);background:var(--bg);border-radius:999px;padding:.5em .9em .5em .5em;display:inline-flex;align-items:center;gap:10px;font:inherit;font-weight:600;cursor:pointer;transition:border-color .15s,transform .12s}
+.stat-chip:hover{border-color:var(--accent);transform:translateY(-1px)}
+.chip-icon{width:28px;height:28px;border-radius:50%;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;font-size:1rem}
+.contacts-card{margin-top:4px}
+.phone-link{font-family:var(--font-head);font-weight:700;font-size:1.3rem;text-decoration:none}
+.phone-link:hover{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -161,6 +178,7 @@ body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],
       <a data-go="map" href="#/map">Карта</a>
       <a data-go="list" href="#/list">Список городов</a>
       <a data-go="wizard" href="#/wizard">Мастер подбора</a>
+      <a data-go="cards" href="#/cards">Карточки (по ЛСР)</a>
     </nav>
     <button class="btn btn-ghost menu-btn" data-open="menu" type="button" aria-label="Меню">Меню</button>
   </div>
@@ -235,6 +253,21 @@ body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],
     </div>
   </section>
 
+  <!-- ============ Вариант 4: Карточки (по референсу ЛСР) ============ -->
+  <section class="screen" data-screen="cards" data-title="Север — Карточки">
+    <div class="wrap stack">
+      <span class="eyebrow">Вариант 4 · По референсу ЛСР</span>
+      <div class="quicklinks row" data-render="renderQuicklinks"></div>
+      <div class="grid lsr-grid" data-render="renderLsrCards"></div>
+
+      <div class="card contacts-card">
+        <h3>Контакты</h3>
+        <p class="muted" style="margin-bottom:4px">Бесплатно по России</p>
+        <a class="phone-link" href="tel:+78005550123">8 (800) 555-01-23</a>
+      </div>
+    </div>
+  </section>
+
   <section class="screen" data-screen="404" data-title="Экран не найден">
     <div class="wrap stack" style="text-align:center">
       <h2>Этого экрана нет в прототипе</h2>
@@ -247,7 +280,7 @@ body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],
 <footer class="footer">
   <div class="wrap row" style="justify-content:space-between">
     <span>&copy; Север (прототип главного экрана)</span>
-    <span class="row"><a data-go="map" href="#/map">Карта</a><a data-go="list" href="#/list">Список</a><a data-go="wizard" href="#/wizard">Мастер</a></span>
+    <span class="row"><a data-go="map" href="#/map">Карта</a><a data-go="list" href="#/list">Список</a><a data-go="wizard" href="#/wizard">Мастер</a><a data-go="cards" href="#/cards">Карточки</a></span>
   </div>
 </footer>
 
@@ -338,6 +371,7 @@ body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],
     <a data-go="map" data-close href="#/map">Карта</a>
     <a data-go="list" data-close href="#/list">Список городов</a>
     <a data-go="wizard" data-close href="#/wizard">Мастер подбора</a>
+    <a data-go="cards" data-close href="#/cards">Карточки (по ЛСР)</a>
   </div>
 </div>
 
@@ -362,6 +396,11 @@ const data = {
     {id:"kzn",   name:"Казань",          count:5,  x:50, y:52, photo:"https://picsum.photos/seed/sever-kzn/640/420"},
     {id:"sochi", name:"Сочи",            count:4,  x:38, y:78, photo:"https://picsum.photos/seed/sever-sochi/640/420"},
     {id:"nsk",   name:"Новосибирск",     count:6,  x:80, y:46, photo:"https://picsum.photos/seed/sever-nsk/640/420"}
+  ],
+  lsrCities: [
+    {id:"tyumen", name:"Тюмень",        objects:5, flats:1860},
+    {id:"ekb2",   name:"Екатеринбург",  objects:7, flats:2740},
+    {id:"msk2",   name:"Москва",        objects:9, flats:4120}
   ],
   types: [
     {id:"flat",  name:"Квартира",     icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>'},
@@ -394,6 +433,18 @@ const hooks = {
   renderWizardTypes(el){
     el.innerHTML = data.types.map(t =>
       `<button class="card wiz-choice hotspot" type="button" data-action="wiz-type" data-value="${t.name}" aria-pressed="false">${t.icon}<span>${t.name}</span></button>`
+    ).join("");
+  },
+  renderQuicklinks(el){
+    el.innerHTML = data.lsrCities.map(c =>
+      `<a href="#card-${c.id}" class="quicklink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M17 7 7 17M7 7h10v10"/></svg>${c.name}</a>`
+    ).join("");
+  },
+  renderLsrCards(el){
+    el.innerHTML = data.lsrCities.map(c =>
+      `<div class="card lsr-card" id="card-${c.id}"><h3>${c.name}</h3><p class="muted">${c.objects} ${plural(c.objects,"объект","объекта","объектов")}</p>`
+      + `<button class="stat-chip hotspot" type="button" data-toast="Переход в каталог проектов: ${c.name}" aria-label="Перейти в каталог: ${c.name}, ${c.flats} ${plural(c.flats,"квартира","квартиры","квартир")}">`
+      + `<span class="chip-icon" aria-hidden="true">&rarr;</span><span>${c.flats} ${plural(c.flats,"квартира","квартиры","квартир")}</span></button></div>`
     ).join("");
   }
 };
