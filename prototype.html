@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Север — прототип первого экрана</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Design tokens ===== */
+:root{
+  --bg:#f4f6f8; --surface:#e8edf1; --fg:#161c24; --muted:#5c6b7a; --border:#d7dee4;
+  --brand:#2f4858; --brand-fg:#ffffff; --accent:#2bb3c0;
+  --ok:#1f8a5f; --err:#c23b2e;
+  --radius:10px; --space:8px; --max:1120px;
+  --font:'Manrope',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-head:'Unbounded',var(--font);
+  --shadow:0 1px 2px rgba(10,20,30,.06),0 8px 24px rgba(10,20,30,.08);
+}
+html.wire{--bg:#fff;--surface:#efefef;--fg:#222;--muted:#777;--border:#bbb;--brand:#444;--brand-fg:#fff;--accent:#888;--radius:4px;--shadow:none;--font-head:var(--font)}
+html.wire img,html.wire .ph{background:repeating-linear-gradient(45deg,#eee,#eee 8px,#e4e4e4 8px,#e4e4e4 16px);border:1px dashed #aaa}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 var(--font)}
+h1,h2,h3{font-family:var(--font-head);line-height:1.15;margin:0 0 .5em}
+h1{font-size:clamp(2rem,5vw,3.2rem)} h2{font-size:clamp(1.4rem,3vw,2rem)} h3{font-size:1.1rem}
+p{margin:0 0 1em} a{color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
+.stack>*+*{margin-top:calc(var(--space)*2)}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+/* Buttons & links (all states) */
+.btn{appearance:none;border:1px solid transparent;border-radius:var(--radius);padding:.7em 1.2em;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.5em;transition:transform .12s,background .12s,box-shadow .12s}
+.btn-primary{background:var(--brand);color:var(--brand-fg)}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn-primary:active{transform:none;filter:brightness(.95)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--fg)}
+.btn-ghost:hover{background:var(--surface)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[data-go],[data-open],[data-close],[data-back],[data-tab],[data-set],[data-inc],[data-toast],[data-action]{cursor:pointer}
+
+/* Header / nav */
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+.brand{font-family:var(--font-head);font-weight:800;font-size:1.3rem;text-decoration:none;letter-spacing:.02em}
+.nav{display:flex;gap:4px}
+.nav a{padding:.6em .9em;border-radius:8px;text-decoration:none;color:var(--muted);font-weight:600}
+.nav a:hover{background:var(--surface);color:var(--fg)}
+.nav a.active{color:var(--fg);background:var(--surface)}
+.menu-btn{display:none}
+@media (max-width:760px){.nav{display:none}.menu-btn{display:inline-flex}}
+
+/* Screens */
+.screen{display:none;padding:48px 0 80px;animation:in .25s ease both}
+.screen.active{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.eyebrow{display:inline-block;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+
+/* Forms */
+.field{display:grid;gap:6px;margin-bottom:16px;position:relative}
+.field label{font-weight:600;font-size:.9rem}
+.field input,.field select,.field textarea{font:inherit;padding:.7em .9em;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:3px solid color-mix(in srgb,var(--brand) 35%,transparent);border-color:var(--brand)}
+
+/* Autocomplete suggestions */
+.suggest{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);list-style:none;padding:6px;z-index:10;max-height:280px;overflow:auto}
+.suggest[hidden]{display:none}
+.suggest li{margin:0}
+.suggest button{width:100%;text-align:left;background:none;border:0;padding:10px 12px;border-radius:8px;font:inherit;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.suggest button:hover,.suggest button:focus-visible{background:var(--surface)}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:.75rem;font-weight:700}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+.tabs [data-tab]{background:none;border:0;font:inherit;padding:.7em 1em;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer}
+.tabs [data-tab].active{color:var(--fg);border-color:var(--brand);font-weight:700}
+[data-panel]{display:none}[data-panel].active{display:block}
+
+/* Modal / drawer */
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(10,14,20,.55);padding:20px}
+.modal.open{display:flex}
+.modal .sheet{background:var(--bg);border-radius:calc(var(--radius) + 4px);box-shadow:var(--shadow);max-width:520px;width:100%;padding:28px;max-height:90vh;overflow:auto}
+.modal.drawer{justify-content:flex-end;align-items:stretch;padding:0}
+.modal.drawer .sheet{max-width:380px;border-radius:0;height:100%}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--fg);color:var(--bg);padding:.8em 1.2em;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+
+/* Hotspots overlay (press H) */
+body.hot [data-go],body.hot [data-open],body.hot [data-tab],body.hot [data-set],body.hot [data-inc],body.hot [data-toast],body.hot form[data-submit] button,body.hot .hotspot{outline:2px dashed #ff2d95;outline-offset:2px}
+
+.footer{border-top:1px solid var(--border);padding:32px 0;color:var(--muted)}
+
+/* ===== Variant 1: map ===== */
+.mapbox{position:relative;height:460px;border-radius:calc(var(--radius) + 8px);overflow:hidden;background:linear-gradient(160deg,#0f2733,#1b3b47 55%,#0f2733);border:1px solid var(--border)}
+.mapbox-bg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.mapbox-pins{position:absolute;inset:0}
+.pin{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:#fff;padding:8px;font:inherit}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 7px color-mix(in srgb, var(--accent) 22%, transparent);transition:transform .15s}
+.pin:hover .pin-dot,.pin:focus-visible .pin-dot{transform:scale(1.35)}
+.pin-label{font-size:.85rem;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.7);text-align:center;white-space:nowrap}
+.pin-label small{display:block;font-weight:500;opacity:.9}
+@media (max-width:700px){
+  .mapbox{position:static;height:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;background:none;border:0;padding:0}
+  .mapbox-bg{display:none}
+  .mapbox-pins{position:static;display:contents}
+  .pin{position:static;transform:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);width:100%}
+  .pin-label{text-shadow:none}
+}
+
+/* Filter groups (accordion) */
+.filter-group{border-bottom:1px solid var(--border);padding:12px 0}
+.filter-group summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.filter-group summary::-webkit-details-marker{display:none}
+.filter-group summary::after{content:"+";font-weight:400;color:var(--muted)}
+.filter-group[open] summary::after{content:"\2013"}
+.filter-options{display:grid;gap:10px;padding-top:12px}
+.filter-options label{display:flex;align-items:center;gap:8px;font-size:.95rem;cursor:pointer}
+
+/* ===== Variant 2: list ===== */
+.city-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.city-row{width:100%;display:flex;justify-content:space-between;align-items:center;padding:26px 6px;border:0;border-bottom:1px solid var(--border);background:transparent;cursor:pointer;position:relative;overflow:hidden;text-align:left;font:inherit;color:inherit}
+.city-row-name{font-family:var(--font-head);font-weight:700;font-size:clamp(1.25rem,3vw,1.9rem);position:relative;z-index:1;transition:color .15s}
+.city-row-count{position:relative;z-index:1;transition:color .15s}
+.city-row::before{content:"";position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transform:scale(1.04);transition:opacity .25s,transform .25s;filter:grayscale(.1) brightness(.5);background-image:var(--photo)}
+.city-row:hover::before,.city-row:focus-visible::before{opacity:1;transform:scale(1)}
+.city-row:hover .city-row-name,.city-row:focus-visible .city-row-name,.city-row:hover .city-row-count,.city-row:focus-visible .city-row-count{color:#fff}
+
+/* ===== Variant 3: wizard ===== */
+.wiz-progress{display:flex;gap:8px;max-width:260px}
+.wiz-progress .seg{flex:1;height:4px;border-radius:999px;background:var(--border)}
+.wiz-progress .seg.active{background:var(--accent)}
+.wiz-step{display:none}
+.wiz-step.active{display:block}
+.wiz-city-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.wiz-type-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.wiz-choice{cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:6px;border:2px solid var(--border);transition:border-color .15s,background .15s;font:inherit;color:inherit}
+.wiz-choice:hover{border-color:var(--muted)}
+.wiz-choice[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, var(--surface))}
+.wiz-type-grid .wiz-choice{flex-direction:row;align-items:center;gap:12px}
+.wiz-choice svg{flex-shrink:0;color:var(--brand)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" data-go="map" href="#/map">Север</a>
+    <nav class="nav" aria-label="Варианты главного экрана">
+      <a data-go="map" href="#/map">Карта</a>
+      <a data-go="list" href="#/list">Список городов</a>
+      <a data-go="wizard" href="#/wizard">Мастер подбора</a>
+    </nav>
+    <button class="btn btn-ghost menu-btn" data-open="menu" type="button" aria-label="Меню">Меню</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ Вариант 1: Карта ============ -->
+  <section class="screen" data-screen="map" data-title="Север — Карта">
+    <div class="wrap stack">
+      <span class="eyebrow">Вариант 1 · Карта</span>
+      <h1>Где вы ищете новостройку?</h1>
+      <p class="muted" style="max-width:56ch">Выберите город на карте или начните вводить название — мы передадим вас в каталог проектов «Север» в этом городе.</p>
+
+      <div class="field" style="max-width:420px">
+        <label for="citySearch">Город</label>
+        <input id="citySearch" type="search" placeholder="Например, Казань" autocomplete="off" aria-describedby="citySuggestHint">
+        <ul id="citySuggest" class="suggest" role="listbox" aria-label="Подсказки городов" hidden></ul>
+        <span id="citySuggestHint" class="muted" style="font-size:.85rem">Начните вводить, чтобы найти город в списке.</span>
+      </div>
+
+      <div class="mapbox" role="group" aria-label="Карта городов присутствия">
+        <svg class="mapbox-bg" viewBox="0 0 800 460" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <circle cx="620" cy="90" r="220" fill="#2bb3c0" opacity=".10"/>
+          <circle cx="120" cy="380" r="180" fill="#2bb3c0" opacity=".08"/>
+          <path d="M0 340 C 160 300, 260 380, 420 330 S 650 260, 800 310" stroke="#2bb3c0" stroke-width="1.5" fill="none" opacity=".25"/>
+          <path d="M0 220 C 180 180, 320 260, 500 200 S 700 150, 800 190" stroke="#ffffff" stroke-width="1" fill="none" opacity=".12"/>
+        </svg>
+        <div class="mapbox-pins" data-render="renderMapPins"></div>
+      </div>
+
+      <button class="btn btn-ghost hotspot" data-open="filters-map" type="button">Фильтры <span class="badge filters-counter" data-scope="map">0</span></button>
+    </div>
+  </section>
+
+  <!-- ============ Вариант 2: Список городов ============ -->
+  <section class="screen" data-screen="list" data-title="Север — Список городов">
+    <div class="wrap stack">
+      <span class="eyebrow">Вариант 2 · Список городов</span>
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h1>Города присутствия</h1>
+        <button class="btn btn-ghost hotspot" data-open="filters-list" type="button">Фильтры <span class="badge filters-counter" data-scope="list">0</span></button>
+      </div>
+      <p class="muted" style="max-width:56ch">Наведите курсор на город, чтобы увидеть проект, или выберите его, чтобы перейти в каталог.</p>
+      <ul class="city-list" data-render="renderCityList"></ul>
+    </div>
+  </section>
+
+  <!-- ============ Вариант 3: Мастер подбора ============ -->
+  <section class="screen" data-screen="wizard" data-title="Север — Мастер подбора">
+    <div class="wrap stack" style="max-width:760px">
+      <span class="eyebrow">Вариант 3 · Мастер подбора</span>
+      <div class="wiz-progress" aria-hidden="true"><span class="seg active"></span><span class="seg"></span></div>
+      <p class="muted" id="wizStepLabel">Шаг 1 из 2 — Город</p>
+
+      <div class="wiz-step active" data-wiz-step="1">
+        <h2>В каком городе ищете?</h2>
+        <div class="grid wiz-city-grid" role="group" aria-label="Выбор города" data-render="renderWizardCities"></div>
+        <div class="row" style="justify-content:flex-end;margin-top:20px">
+          <button class="btn btn-primary hotspot" id="wizNext1" type="button" data-action="wiz-next" disabled>Далее</button>
+        </div>
+      </div>
+
+      <div class="wiz-step" data-wiz-step="2">
+        <h2>Что вас интересует?</h2>
+        <div class="grid wiz-type-grid" role="group" aria-label="Выбор типа объекта" data-render="renderWizardTypes"></div>
+        <div class="row" style="justify-content:space-between;margin-top:20px">
+          <button class="btn btn-ghost hotspot" id="wizBack" type="button" data-action="wiz-back">Назад</button>
+          <button class="btn btn-primary hotspot" id="wizShow" type="button" data-action="wiz-show" disabled>Показать результаты</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="404" data-title="Экран не найден">
+    <div class="wrap stack" style="text-align:center">
+      <h2>Этого экрана нет в прототипе</h2>
+      <button class="btn btn-primary" data-go="map" type="button">На главную</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap row" style="justify-content:space-between">
+    <span>&copy; Север (прототип главного экрана)</span>
+    <span class="row"><a data-go="map" href="#/map">Карта</a><a data-go="list" href="#/list">Список</a><a data-go="wizard" href="#/wizard">Мастер</a></span>
+  </div>
+</footer>
+
+<!-- ============ MODALS / DRAWERS ============ -->
+<div class="modal drawer" id="filters-map" data-filter-scope="map" role="dialog" aria-modal="true" aria-label="Фильтры — Карта">
+  <div class="sheet stack">
+    <div class="row" style="justify-content:space-between"><h3>Фильтры</h3><button class="btn btn-ghost" data-close type="button">Закрыть</button></div>
+    <details class="filter-group" open>
+      <summary>Тип жилья</summary>
+      <div class="filter-options">
+        <label><input type="checkbox" value="Квартира"> Квартира</label>
+        <label><input type="checkbox" value="Апартаменты"> Апартаменты</label>
+        <label><input type="checkbox" value="Таунхаус"> Таунхаус</label>
+        <label><input type="checkbox" value="Коммерция"> Коммерция</label>
+      </div>
+    </details>
+    <details class="filter-group">
+      <summary>Срок сдачи</summary>
+      <div class="filter-options">
+        <label><input type="checkbox" value="Сдан"> Сдан</label>
+        <label><input type="checkbox" value="2026"> 2026</label>
+        <label><input type="checkbox" value="2027"> 2027</label>
+        <label><input type="checkbox" value="2028+"> 2028 и позже</label>
+      </div>
+    </details>
+    <details class="filter-group">
+      <summary>Бюджет</summary>
+      <div class="filter-options">
+        <label><input type="checkbox" value="до 6 млн"> до 6 млн ₽</label>
+        <label><input type="checkbox" value="6-10 млн"> 6–10 млн ₽</label>
+        <label><input type="checkbox" value="10-18 млн"> 10–18 млн ₽</label>
+        <label><input type="checkbox" value="от 18 млн"> от 18 млн ₽</label>
+      </div>
+    </details>
+    <details class="filter-group">
+      <summary>Комнатность</summary>
+      <div class="filter-options">
+        <label><input type="checkbox" value="Студия"> Студия</label>
+        <label><input type="checkbox" value="1-комн"> 1-комнатная</label>
+        <label><input type="checkbox" value="2-комн"> 2-комнатная</label>
+        <label><input type="checkbox" value="3+"> 3 и более комнат</label>
+      </div>
+    </details>
+    <div class="row" style="justify-content:space-between;margin-top:8px">
+      <button class="btn btn-ghost hotspot" type="button" data-action="filters-reset">Сбросить всё</button>
+      <button class="btn btn-primary hotspot" type="button" data-close data-toast="Фильтры применены">Применить (<span class="filters-counter" data-scope="map">0</span>)</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="filters-list" data-filter-scope="list" role="dialog" aria-modal="true" aria-label="Фильтры — Список городов">
+  <div class="sheet stack" style="max-width:640px">
+    <div class="row" style="justify-content:space-between"><h3>Фильтры</h3><button class="btn btn-ghost" data-close type="button">Закрыть</button></div>
+    <div class="tabs" role="tablist">
+      <button data-tab="lf:params" class="active" type="button" role="tab">Параметры</button>
+      <button data-tab="lf:term" type="button" role="tab">Сроки</button>
+      <button data-tab="lf:dev" type="button" role="tab">Застройщик</button>
+    </div>
+    <div data-panel="lf:params" class="active filter-options">
+      <label><input type="checkbox" value="Квартира"> Квартира</label>
+      <label><input type="checkbox" value="Апартаменты"> Апартаменты</label>
+      <label><input type="checkbox" value="Студия"> Студия</label>
+      <label><input type="checkbox" value="2-комн"> 2-комнатная</label>
+      <label><input type="checkbox" value="3+"> 3 и более комнат</label>
+    </div>
+    <div data-panel="lf:term" class="filter-options">
+      <label><input type="checkbox" value="Сдан"> Сдан</label>
+      <label><input type="checkbox" value="2026"> 2026</label>
+      <label><input type="checkbox" value="2027"> 2027</label>
+      <label><input type="checkbox" value="2028+"> 2028 и позже</label>
+    </div>
+    <div data-panel="lf:dev" class="filter-options">
+      <label><input type="checkbox" value="Север Девелопмент"> Север Девелопмент</label>
+      <label><input type="checkbox" value="СК Полярная звезда"> СК «Полярная звезда»</label>
+      <label><input type="checkbox" value="Балтийский дом"> «Балтийский дом»</label>
+      <label><input type="checkbox" value="ГорСтройПроект"> «ГорСтройПроект»</label>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:8px">
+      <button class="btn btn-ghost hotspot" type="button" data-action="filters-reset">Сбросить всё</button>
+      <button class="btn btn-primary hotspot" type="button" data-close data-toast="Фильтры применены">Применить (<span class="filters-counter" data-scope="list">0</span>)</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal drawer" id="menu" role="dialog" aria-modal="true" aria-label="Меню">
+  <div class="sheet stack">
+    <div class="row" style="justify-content:space-between"><h3>Меню</h3><button class="btn btn-ghost" data-close type="button">Закрыть</button></div>
+    <a data-go="map" data-close href="#/map">Карта</a>
+    <a data-go="list" data-close href="#/list">Список городов</a>
+    <a data-go="wizard" data-close href="#/wizard">Мастер подбора</a>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============ MOCK DATA ============ */
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, n1 = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (n1 > 1 && n1 < 5) return few;
+  if (n1 === 1) return one;
+  return many;
+}
+function projWord(n){ return plural(n, "проект", "проекта", "проектов"); }
+
+const data = {
+  cities: [
+    {id:"spb",   name:"Санкт-Петербург", count:12, x:24, y:34, photo:"https://picsum.photos/seed/sever-spb/640/420"},
+    {id:"msk",   name:"Москва",          count:18, x:36, y:46, photo:"https://picsum.photos/seed/sever-msk/640/420"},
+    {id:"ekb",   name:"Екатеринбург",    count:7,  x:66, y:40, photo:"https://picsum.photos/seed/sever-ekb/640/420"},
+    {id:"kzn",   name:"Казань",          count:5,  x:50, y:52, photo:"https://picsum.photos/seed/sever-kzn/640/420"},
+    {id:"sochi", name:"Сочи",            count:4,  x:38, y:78, photo:"https://picsum.photos/seed/sever-sochi/640/420"},
+    {id:"nsk",   name:"Новосибирск",     count:6,  x:80, y:46, photo:"https://picsum.photos/seed/sever-nsk/640/420"}
+  ],
+  types: [
+    {id:"flat",  name:"Квартира",     icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>'},
+    {id:"apart", name:"Апартаменты",  icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/></svg>'},
+    {id:"comm",  name:"Коммерция",    icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'}
+  ]
+};
+
+/* ============ HOOKS ============ */
+const hooks = {
+  renderMapPins(el){
+    el.innerHTML = data.cities.map(c =>
+      `<button class="pin hotspot" style="--x:${c.x}%;--y:${c.y}%" type="button" data-toast="Переход в каталог проектов: ${c.name}" aria-label="${c.name}, ${c.count} ${projWord(c.count)}">`
+      + `<span class="pin-dot"></span><span class="pin-label">${c.name}<small>${c.count} ${projWord(c.count)}</small></span></button>`
+    ).join("");
+  },
+  renderCityList(el){
+    el.innerHTML = data.cities.map(c =>
+      `<li><button class="city-row hotspot" type="button" style="--photo:url('${c.photo}')" data-toast="Переход в каталог проектов: ${c.name}">`
+      + `<span class="city-row-name">${c.name}</span><span class="city-row-count muted">${c.count} ${projWord(c.count)}</span></button></li>`
+    ).join("");
+  },
+  renderWizardCities(el){
+    el.innerHTML = data.cities.map(c =>
+      `<button class="card wiz-choice hotspot" type="button" data-action="wiz-city" data-value="${c.name}" aria-pressed="false">`
+      + `<strong>${c.name}</strong><span class="muted">${c.count} ${projWord(c.count)}</span></button>`
+    ).join("");
+    resetWizard();
+  },
+  renderWizardTypes(el){
+    el.innerHTML = data.types.map(t =>
+      `<button class="card wiz-choice hotspot" type="button" data-action="wiz-type" data-value="${t.name}" aria-pressed="false">${t.icon}<span>${t.name}</span></button>`
+    ).join("");
+  }
+};
+
+/* ============ PROTOTYPE STATE ============ */
+const state = {};
+
+/* ============ RUNTIME: do not rewrite, only extend ============ */
+(() => {
+  const $  = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  const screens = $$("[data-screen]");
+  const ids = new Set(screens.map(s => s.dataset.screen));
+  const history = [];
+  let current = null, param = null, goingBack = false;
+
+  function route(){
+    const raw = location.hash.replace(/^#\/?/, "") || [...ids][0];
+    const [id, ...rest] = raw.split("/");
+    const target = ids.has(id) ? id : "404";
+    const p = rest.join("/") || null;
+    if (current && !goingBack) history.push(current + (param ? "/" + param : ""));
+    goingBack = false;
+    current = target; param = p;
+    screens.forEach(s => s.classList.toggle("active", s.dataset.screen === target));
+    const scr = $('[data-screen="'+target+'"]');
+    document.title = (scr.dataset.title || target);
+    $$("[data-go]").forEach(a => {
+      const t = a.dataset.go.split("/")[0];
+      if (a.closest(".nav")) a.classList.toggle("active", t === target);
+    });
+    $$("[data-render]", scr).forEach(el => hooks[el.dataset.render] && hooks[el.dataset.render](el, p));
+    window.scrollTo(0, 0);
+    scr.setAttribute("tabindex", "-1"); scr.focus({preventScroll:true});
+  }
+  function go(to){ location.hash = "#/" + to.replace(/^#?\/?/, ""); }
+  window.proto = { go, state, data, get param(){ return param; }, get screen(){ return current; } };
+
+  function toast(msg){
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+  function bind(){ $$("[data-bind]").forEach(el => el.textContent = state[el.dataset.bind] ?? ""); }
+  function setModal(id, open){ const m = document.getElementById(id); if (m) m.classList.toggle("open", open); }
+
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-go],[data-back],[data-open],[data-close],[data-tab],[data-set],[data-inc],[data-toast]");
+    if (!el) return;
+    if (el.tagName === "A") e.preventDefault();
+    if (el.matches("form[data-submit]")) return;
+    if (el.dataset.toast && !el.closest("form")) toast(el.dataset.toast);
+    if (el.hasAttribute("data-close")) { const m = el.closest(".modal"); if (m) m.classList.remove("open"); }
+    if (el.dataset.open) setModal(el.dataset.open, true);
+    if (el.dataset.set) { const [k, v] = el.dataset.set.split("="); state[k] = v; bind(); }
+    if (el.dataset.inc) { state[el.dataset.inc] = (Number(state[el.dataset.inc]) || 0) + 1; bind(); }
+    if (el.dataset.tab) {
+      const [g] = el.dataset.tab.split(":");
+      $$('[data-tab^="'+g+':"]').forEach(t => t.classList.toggle("active", t === el));
+      $$('[data-panel^="'+g+':"]').forEach(p => p.classList.toggle("active", p.dataset.panel === el.dataset.tab));
+    }
+    if (el.hasAttribute("data-back")) { const prev = history.pop(); goingBack = true; go(prev || [...ids][0]); setTimeout(() => { goingBack = false; }, 80); return; }
+    if (el.dataset.go) go(el.dataset.go);
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") $$(".modal.open").forEach(m => m.classList.remove("open"));
+    if ((e.key === "h" || e.key === "H") && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) document.body.classList.toggle("hot");
+  });
+  $$(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); }));
+
+  window.addEventListener("hashchange", route);
+  bind(); route();
+})();
+
+/* ============ EXTRA: per-screen behaviour (city search, filter counters, wizard) ============ */
+(() => {
+  // --- city search autocomplete (Вариант 1) ---
+  const searchInput = document.getElementById("citySearch");
+  const suggestList = document.getElementById("citySuggest");
+  if (searchInput && suggestList) {
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) { suggestList.hidden = true; suggestList.innerHTML = ""; return; }
+      const matches = data.cities.filter(c => c.name.toLowerCase().includes(q));
+      suggestList.hidden = false;
+      suggestList.innerHTML = matches.length
+        ? matches.map(c => `<li role="option"><button class="hotspot" type="button" data-toast="Переход в каталог проектов: ${c.name}">${c.name} <span class="muted">— ${c.count} ${projWord(c.count)}</span></button></li>`).join("")
+        : `<li class="muted" role="status" style="padding:10px 12px">Город не найден</li>`;
+    });
+    document.addEventListener("click", e => {
+      if (!e.target.closest("#citySearch") && !e.target.closest("#citySuggest")) suggestList.hidden = true;
+    });
+  }
+
+  // --- filter group counters + reset (Вариант 1 и 2) ---
+  function recalcFilters(scope){
+    const modal = document.querySelector(`.modal[data-filter-scope="${scope}"]`);
+    if (!modal) return;
+    const n = modal.querySelectorAll('input[type="checkbox"]:checked').length;
+    document.querySelectorAll(`.filters-counter[data-scope="${scope}"]`).forEach(el => el.textContent = n);
+  }
+  document.addEventListener("change", e => {
+    const cb = e.target.closest('input[type="checkbox"]');
+    if (!cb) return;
+    const modal = cb.closest(".modal[data-filter-scope]");
+    if (modal) recalcFilters(modal.dataset.filterScope);
+  });
+  document.addEventListener("click", e => {
+    const resetBtn = e.target.closest('[data-action="filters-reset"]');
+    if (!resetBtn) return;
+    const modal = resetBtn.closest(".modal[data-filter-scope]");
+    if (!modal) return;
+    modal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    recalcFilters(modal.dataset.filterScope);
+  });
+
+  // close any open modal/drawer when switching main-screen variant (tab bar), so it never blocks the next screen
+  window.addEventListener("hashchange", () => {
+    document.querySelectorAll(".modal.open").forEach(m => m.classList.remove("open"));
+  });
+
+  // --- wizard (Вариант 3) ---
+  const wizState = { city:null, type:null };
+  window.resetWizard = function resetWizard(){
+    document.querySelectorAll(".wiz-step").forEach((s,i) => s.classList.toggle("active", i===0));
+    document.querySelectorAll(".wiz-progress .seg").forEach((s,i) => s.classList.toggle("active", i===0));
+    const label = document.getElementById("wizStepLabel"); if (label) label.textContent = "Шаг 1 из 2 — Город";
+    const next1 = document.getElementById("wizNext1"); if (next1) next1.disabled = true;
+    const show = document.getElementById("wizShow"); if (show) { show.disabled = true; show.removeAttribute("data-toast"); }
+    wizState.city = null; wizState.type = null;
+  };
+  function goToWizStep(n){
+    document.querySelectorAll(".wiz-step").forEach((s,i) => s.classList.toggle("active", i === n-1));
+    document.querySelectorAll(".wiz-progress .seg").forEach((s,i) => s.classList.toggle("active", i <= n-1));
+    const label = document.getElementById("wizStepLabel");
+    if (label) label.textContent = n === 1 ? "Шаг 1 из 2 — Город" : "Шаг 2 из 2 — Тип объекта";
+    const stepEl = document.querySelector(`.wiz-step[data-wiz-step="${n}"]`);
+    if (stepEl) { stepEl.setAttribute("tabindex","-1"); stepEl.focus({preventScroll:true}); }
+  }
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-action]");
+    if (!el) return;
+    const action = el.dataset.action;
+    if (action === "wiz-city") {
+      document.querySelectorAll('[data-action="wiz-city"]').forEach(b => b.setAttribute("aria-pressed","false"));
+      el.setAttribute("aria-pressed","true");
+      wizState.city = el.dataset.value;
+      const next1 = document.getElementById("wizNext1"); if (next1) next1.disabled = false;
+    }
+    if (action === "wiz-type") {
+      document.querySelectorAll('[data-action="wiz-type"]').forEach(b => b.setAttribute("aria-pressed","false"));
+      el.setAttribute("aria-pressed","true");
+      wizState.type = el.dataset.value;
+      const show = document.getElementById("wizShow");
+      if (show) { show.disabled = false; show.dataset.toast = `Открываем подборку: ${wizState.city}, ${wizState.type}`; }
+    }
+    if (action === "wiz-next") goToWizStep(2);
+    if (action === "wiz-back") goToWizStep(1);
+  });
+})();
+</script>
+</body>
+</html>
